@@ -1,0 +1,192 @@
+;; -*- Hen -*-
+;;
+;;  A grammar for the Ersatz template library.
+;;
+;;
+;; Copyright 2012-2014 Ivan Raikov
+;;
+;; This program is free software: you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation, either version 3 of the
+;; License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful, but
+;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;; General Public License for more details.
+;;
+;; A full copy of the GPL license can be found at
+;; <http://www.gnu.org/licenses/>.
+;;
+
+(require-extension lalr)
+
+(define template-parser
+
+  (lalr-parser
+
+   (output:  parser "ersatz.grm.scm")
+
+   (out-table: "ersatz.grm.out")
+
+   ;; --- token definitions
+
+   (FOR ENDFOR SET EXTENDS INCLUDE MACRO IDENT
+    ENDMACRO BLOCK ENDBLOCK FILTER ENDFILTER CALL ENDCALL IMPORT FROM
+    WITH ENDWITH WITHOUT CONTEXT AUTOESCAPE ENDAUTOESCAPE EOF INT FLOAT
+    STRING TEXT EXPAND ENDEXPAND TRUE FALSE NULL 
+    COLON RBRACE RBRACKET RPAREN IF ELSE ELSEIF ENDIF NOT
+
+    (left:  OR AND LT GT EQ EQEQ NEQ PLUS MINUS)
+    (left:  TIMES DIV MOD VLINE COMMA)
+    (right: POWER LBRACE LBRACKET LPAREN IN IS AS DOTFIELD)
+    (nonassoc: UMINUS)
+    )
+
+   ;; Toplevel entry point 
+
+   (input
+    () : '()
+    (stmts) : (reverse $1)
+    )
+    
+   (stmts
+    (stmt) :  (list $1)
+    (stmt stmts) : (cons $1 $2 )
+    )
+
+   (stmt
+    (EXPAND expr ENDEXPAND)      : (ExpandStatement $2) 
+    (error ENDEXPAND)
+    (SET ident-list EQ expr)     : (SetStatement (SetExpr $2) $4)
+    (EXTENDS STRING)             : (ExtendsStatement $2)
+    (BLOCK ident ENDBLOCK)       : (BlockStatement $2 #f '())
+    (BLOCK ident ENDBLOCK ident) : (BlockStatement $2 $4 '() )
+    (BLOCK ident stmts ENDBLOCK) : (BlockStatement $2 #f $3 )
+    (BLOCK ident stmts ENDBLOCK ident) : (BlockStatement $2 $5 $3)
+    (error ENDBLOCK)
+    (FILTER ident stmts ENDFILTER) : (FilterStatement $2 $3)
+    (error ENDFILTER)
+    (INCLUDE STRING context-part)  : (IncludeStatement $2 $3)
+    (IMPORT STRING as-part)        : (ImportStatement $2 $3)
+    (FROM STRING IMPORT expr-list) : (FromImportStatement $2 $4)
+    (MACRO ident LPAREN expr-list RPAREN stmts ENDMACRO) : (MacroStatement $2 $4 $6)
+    (error ENDMACRO)
+    (CALL opt-args ident LPAREN expr-list RPAREN stmts ENDCALL) : (CallStatement $3 $2 $5 $7) 
+    (error ENDCALL)
+    (IF if-chain else-part ENDIF) : (IfStatement $2 $3) 
+    (error ENDIF)
+    (FOR ident-list IN expr stmts ENDFOR)  : (ForStatement (SetExpr $2) $4 $5)
+    (FOR ident IN expr stmts ENDFOR)       : (ForStatement $2 $4 $5)
+    (error ENDFOR)
+    (WITH expr-list stmts ENDWITH) : (WithStatement $2 $3) 
+    (error ENDWITH)
+    (AUTOESCAPE expr stmts ENDAUTOESCAPE) : (AutoEscapeStatement $2 $3) 
+    (error ENDAUTOESCAPE )
+    (TEXT) : (TextStatement $1)
+    )
+
+
+   (if-chain
+    (expr stmts) : (list (cons $1 $2))
+    (expr stmts ELSEIF if-chain) : (cons (cons $1 $2) $4 )
+    (error ENDIF)
+    )
+
+   (else-part
+    () : '()
+    (ELSE stmts) : $2 
+    )
+
+   (as-part
+    () : #f
+    (AS ident) : (ident-expr->name $2) 
+    )
+
+   (context-part
+    () : #t
+    (WITH CONTEXT) : #t
+    (WITHOUT CONTEXT) : #f
+    )
+
+
+   
+   (expr
+    (expr1)                         : $1
+    (expr LBRACKET expr0 RBRACKET) : (BracketExpr $1 $3)
+    (NOT expr)                      : (NotOpExpr $2)
+    (expr PLUS expr)                : (PlusOpExpr $1 $3)
+    (expr MINUS expr)               : (MinusOpExpr $1 $3) 
+    (expr DIV expr)                 : (DivOpExpr $1 $3) 
+    (expr MOD expr)                 : (ModOpExpr $1 $3)
+    (expr TIMES expr)               : (TimesOpExpr $1 $3) 
+    (expr POWER expr)               : (PowerOpExpr $1 $3) 
+    (expr EQEQ expr)                : (EqEqOpExpr $1 $3) 
+    (expr LT EQ expr)               : (LtEqOpExpr $1 $4) 
+    (expr GT EQ expr)               : (GtEqOpExpr $1 $4) 
+    (expr AND expr)                 : (AndOpExpr $1 $3) 
+    (expr OR expr)                  : (OrOpExpr $1 $3) 
+    (expr NEQ expr)                 : (NotEqOpExpr $1 $3) 
+    (expr LT expr)                  : (LtOpExpr $1 $3) 
+    (expr GT expr)                  : (GtOpExpr $1 $3) 
+    (expr IN expr)                  : (InOpExpr $1 $3) 
+    (expr VLINE expr)               : (ApplyExpr $3 (list $1))
+    (expr IS expr expr)             : (TestOpExpr $1 (ApplyExpr $3 (list $4)))
+    (expr IS expr)                  : (TestOpExpr $1 $3) 
+    (ident EQ expr)                 : (KeywordExpr $1 $3) 
+    (ident AS ident)                : (AliasExpr $1 $3) 
+;;    (MINUS expr (prec: UMINUS))     : (NegativeOpExpr $2)
+    )
+
+    (expr1 
+     (expr0)                          : $1
+     (expr1 LPAREN expr-list RPAREN ) : (ApplyExpr $1 $3)
+     (LBRACKET expr-list RBRACKET)    : (ListExpr $2)
+     (LPAREN expr-list RPAREN)        : (SetExpr $2) 
+     (LBRACE assoc-list RBRACE)       : (ObjExpr $2) 
+     )
+
+    (expr0
+     (ident)                         : $1 
+     (INT)                           : (LiteralExpr (Tint $1))
+     (FLOAT)                         : (LiteralExpr (Tfloat $1))
+     (TRUE)                          : (LiteralExpr (Tbool #t))
+     (FALSE)                         : (LiteralExpr (Tbool #f))
+     (STRING)                        : (LiteralExpr (Tstr $1))
+     (NULL)                          : (LiteralExpr (Tnull))
+     (expr DOTFIELD)                 : (DotExpr $1 (IdentExpr (string->symbol $2)))
+     (LPAREN expr RPAREN)            : $2)
+
+    (expr-list
+     () : (list)
+     (expr) : (list $1)
+     (expr COMMA expr-list) : (cons $1 $3)
+     )
+
+
+   (ident-list
+    (ident) : (list $1)
+    (ident COMMA ident-list) : (cons $1 $3)
+    )
+
+   (ident
+    (IDENT) : (IdentExpr $1) 
+    )
+
+   (assoc-list
+    (assoc) :  (list $1)
+    (assoc COMMA assoc-list) : (cons $1 $3)
+    )
+
+   (assoc
+    (expr COLON expr) : (cons $1 $3))
+   
+   
+   (opt-args
+    () : (list)
+    (LPAREN expr-list RPAREN) : $2
+    )
+
+
+))
+

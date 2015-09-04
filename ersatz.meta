@@ -1,0 +1,28 @@
+;;;; -*- Hen -*-
+
+((egg "ersatz.egg") ; This should never change
+
+ ; List here all the files that should be bundled as part of your egg.  
+
+ (files "ersatz.meta" "ersatz.setup"  "ersatz.grm" "make-ersatz-lexer.scm" 
+	"ersatz-lib.scm" "runtime.scm" "eval.scm" "parser.scm" 
+	 )
+
+ ; Your egg's license:
+
+ (license "GPL-3")
+
+ ; Pick one from the list of categories (see below) for your egg and
+ ; enter it here.
+
+ (category parsing)
+
+ ; A list of eggs ersatz depends on.
+
+ (needs make datatype silex (lalr 2.4.2) utf8 uri-generic)
+
+ (test-depends test)
+
+ (author "Ivan Raikov")
+
+ (synopsis "A template engine inspired by Jinja2 and Jingoo."))

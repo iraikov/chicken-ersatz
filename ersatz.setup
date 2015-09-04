@@ -1,0 +1,43 @@
+;;;; -*- Hen -*-
+
+(define (dynld-name fn)		
+  (make-pathname #f fn ##sys#load-dynamic-extension))	
+
+(define version 1.23)
+
+(use make)
+
+(make (
+       ("ersatz.grm.scm" ("ersatz.grm")
+	(run (csi -s ersatz.grm)))
+
+       ("ersatz.l" ("make-ersatz-lexer.scm")
+	(run (csi -n -e "'(include \"make-ersatz-lexer.scm\") (make-ersatz-lexer (open-output-file \"ersatz.l\"))'")))
+	
+       ("ersatz.l.scm" ("ersatz.l")
+	(run (csi -n -R silex
+		  -e "'(lex-tables \"ersatz.l\" \"default-ersatz-lexer-table\" \"ersatz.l.scm\" (quote counters) (quote line) (quote code))'")))
+
+       ((dynld-name "ersatz-lib") ("ersatz-lib.scm" "runtime.scm" "eval.scm" "parser.scm" "ersatz.grm.scm" "ersatz.l.scm")
+	(compile -O -d2 -S -s ersatz-lib.scm -j ersatz-lib))
+
+       ((dynld-name "ersatz-lib.import") ("ersatz-lib.import.scm")
+	(compile  -s ersatz-lib.import.scm))
+       )
+
+  (list (dynld-name "ersatz-lib")
+	(dynld-name "ersatz-lib.import"))
+  )
+
+
+(install-extension
+
+  ; Name of your extension:
+  'ersatz
+
+  ; Files to install for your extension:
+  `(,(dynld-name "ersatz-lib") ,(dynld-name "ersatz-lib.import") )
+
+  ; Assoc list with properties for your extension:
+  `((version ,version)
+    ))
