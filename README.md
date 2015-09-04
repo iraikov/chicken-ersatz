@@ -248,165 +248,166 @@ Template values are represented by the following s-expressions:
 ```
 
 ### Template cheat sheet
- 
- include test
- ============
- 
- {% include "header.tmpl" %}
- 
- binop
- ======
- 
- 1+1 = {{ 1 + 1 }}
- 1-1 = {{ 1 - 1 }}
- 2*3 = {{ 2 * 3 }}
- 4/2 = {{ 4 / 2 }}
- 8^3 = {{ 8 ** 3 }}
- 8%3 = {{ 8 % 3 }}
- not true = {{ !true }}
- not true(2) = {{ not true }} 
- 
- single quote string test
- =========================
- 
- {% set single_quoted = 'hoge' %}
- single_quoted = {{single_quoted}}
- 
- expand test
- ===========
- 
- {% set danger = "<script>alert(1)</script>" %}
- expand with escape = {{ danger }}
- expand with safe = {{ danger|safe }}
- 
- set test
- =========
- 
- set hoge = "ok"
- {% set hoge = "ok" %}
- now hoge = {{ hoge }}
- 
- if test
- =======
- 
- {% if hoge == "ok" %}
- value of hoge == "ok"
- {% else %}
- value of hoge != "ok"
- {% endif %}
- 
- for test
- ========
- 
- 
- {% for item in [1,2,3,4,5] %}
- {% set tmp = "hoge" %}
- <p>{{item}}</p>
- <p>{{loop.cycle(1,2,3)}}</p>
- <p>tmp = {{item}}</p>
- {% endfor %}
- 
- {% for href, title in [ ("http://yahoo.co.jp", "yahoo japan") ] %}
- <a href="{{href}}">{{title}}</a>
- {% endfor %}
- 
- {% for href, title in [("http://yahoo.co.jp", "yahoo japan"), ("http://google.co.jp", "google japan")] %}
- <a href="{{href}}">{{title}}</a>
- {% endfor %}
- 
- {% for href, title in [("http://yahoo.co.jp", "yahoo japan"), ("http://google.co.jp", "google japan")] %}
- <a href="{{href}}">{{title}}</a>
- {% endfor %}
- 
-  obj test
- =========
- 
- {% set obj = { age:10, name: 'aa' } %}
- 
- name = {{obj.name}}
- age = {{obj.age}}
- obj["name"] = {{ obj["name"] }}
- obj["age"] = {{ obj["age"] }}
- 
- filter test
- ===========
- 
- upper test:{{ "must be upper"|upper }}
- word count for "hoge hage hige" = {{ "hoge hage hige"|wordcount}}
- 
- func test
- =========
- 
- range(0,3) = {% for x in range(0,3) %}{{x}}{% endfor %}
- range(3,0) = {% for x in range(3,0) %}{{x}}{% endfor %}
- 
- strlen("testtest") = {{ strlen("testtest") }}
- strlen("日本語") = {{ strlen("日本語") }}
- 
- round floor of 1.5 = {{1.5|round("floor")|int}}
- round ceil of 1.5 = {{1.5|round("ceil")|int}}
- 
- join(",", [1,2,3,4,5]) = {{ join(",", [1,2,3,4,5]) }}
- 
- {% with long_list =  [10,20,30,40,50,60,70,80,90,100] %}
- {% for row in slice(4, long_list) %}
-   {% set y = loop.index %}
-   {% for col in row %}
-   {% set x = loop.index %}
-   {{x}},{{y}} = {{col}}
-   {% endfor %}
- {% endfor %}
- {% endwith %}
- 
- 
- filter tag test
- ===============
- 
- {% filter upper %}
- must be upper
- {% endfilter %}
- 
- list expr
- =========
- 
- {% for x in [1,2,3,4.5,"str"] %}{{x}}{% endfor %}
- {% for x in [] %}{{x}}{% endfor %}
- 
- {{ join("-", [1,2,3]) }}
- 
- {{ "{{" }}
- 
- syntax test "is"
- ================
- 
- 6 is divisibleby 4 = {{ 6 is divisibleby(4) }}
- 6 is divisibleby 3 = {{ 6 is divisibleby(3) }}
- 6 is divisibleby 2 = {{ 6 is divisibleby(2) }}
- 6 is divisibleby 2 = {{ 6 is divisibleby 2 }}
- 6 is divisibleby 3 via func = {{ divisibleby(3,6) }}
- 
- macro test
- ==========
- 
- {% macro hoge_macro(i,j) %}
- {{i}},{{j}}
- {% endmacro %}
- 
- {{ hoge_macro(10,20) }}
- 
- {# at this point, delay_macro is not declared, but we can call it. #}
- {{ delay_macro(10,20) }}
- 
- {% macro delay_macro(x,y) %}
- {{x}} {{ caller(1,2) }} {{y}}
- {% endmacro %}
- 
- {% call(a,b) delay_macro("from", "to") %}
- inner text!
- args of call = {{a}},{{b}}
- macro name = {{delay_macro.name}}
- via caller = {{delay_macro.caller}}
- {% endcall %}
+
+> 
+> include test
+> ============
+> 
+> {% include "header.tmpl" %}
+> 
+> binop
+> ======
+> 
+> 1+1 = {{ 1 + 1 }}
+> 1-1 = {{ 1 - 1 }}
+> 2*3 = {{ 2 * 3 }}
+> 4/2 = {{ 4 / 2 }}
+> 8^3 = {{ 8 ** 3 }}
+> 8%3 = {{ 8 % 3 }}
+> not true = {{ !true }}
+> not true(2) = {{ not true }} 
+> 
+> single quote string test
+> =========================
+> 
+> {% set single_quoted = 'hoge' %}
+> single_quoted = {{single_quoted}}
+> 
+> expand test
+> ===========
+> 
+> {% set danger = "<script>alert(1)</script>" %}
+> expand with escape = {{ danger }}
+> expand with safe = {{ danger|safe }}
+> 
+> set test
+> =========
+> 
+> set hoge = "ok"
+> {% set hoge = "ok" %}
+> now hoge = {{ hoge }}
+> 
+> if test
+> =======
+> 
+> {% if hoge == "ok" %}
+> value of hoge == "ok"
+> {% else %}
+> value of hoge != "ok"
+> {% endif %}
+> 
+> for test
+> ========
+> 
+> 
+> {% for item in [1,2,3,4,5] %}
+> {% set tmp = "hoge" %}
+> <p>{{item}}</p>
+> <p>{{loop.cycle(1,2,3)}}</p>
+> <p>tmp = {{item}}</p>
+> {% endfor %}
+> 
+> {% for href, title in [ ("http://yahoo.co.jp", "yahoo japan") ] %}
+> <a href="{{href}}">{{title}}</a>
+> {% endfor %}
+> 
+> {% for href, title in [("http://yahoo.co.jp", "yahoo japan"), ("http://google.co.jp", "google japan")] %}
+> <a href="{{href}}">{{title}}</a>
+> {% endfor %}
+> 
+> {% for href, title in [("http://yahoo.co.jp", "yahoo japan"), ("http://google.co.jp", "google japan")] %}
+> <a href="{{href}}">{{title}}</a>
+> {% endfor %}
+> 
+>  obj test
+> =========
+> 
+> {% set obj = { age:10, name: 'aa' } %}
+> 
+> name = {{obj.name}}
+> age = {{obj.age}}
+> obj["name"] = {{ obj["name"] }}
+> obj["age"] = {{ obj["age"] }}
+> 
+> filter test
+> ===========
+> 
+> upper test:{{ "must be upper"|upper }}
+> word count for "hoge hage hige" = {{ "hoge hage hige"|wordcount}}
+> 
+> func test
+> =========
+> 
+> range(0,3) = {% for x in range(0,3) %}{{x}}{% endfor %}
+> range(3,0) = {% for x in range(3,0) %}{{x}}{% endfor %}
+> 
+> strlen("testtest") = {{ strlen("testtest") }}
+> strlen("日本語") = {{ strlen("日本語") }}
+> 
+> round floor of 1.5 = {{1.5|round("floor")|int}}
+> round ceil of 1.5 = {{1.5|round("ceil")|int}}
+> 
+> join(",", [1,2,3,4,5]) = {{ join(",", [1,2,3,4,5]) }}
+> 
+> {% with long_list =  [10,20,30,40,50,60,70,80,90,100] %}
+> {% for row in slice(4, long_list) %}
+>   {% set y = loop.index %}
+>   {% for col in row %}
+>   {% set x = loop.index %}
+>   {{x}},{{y}} = {{col}}
+>   {% endfor %}
+> {% endfor %}
+> {% endwith %}
+> 
+> 
+> filter tag test
+> ===============
+> 
+> {% filter upper %}
+> must be upper
+> {% endfilter %}
+> 
+> list expr
+> =========
+> 
+> {% for x in [1,2,3,4.5,"str"] %}{{x}}{% endfor %}
+> {% for x in [] %}{{x}}{% endfor %}
+> 
+> {{ join("-", [1,2,3]) }}
+> 
+> {{ "{{" }}
+> 
+> syntax test "is"
+> ================
+> 
+> 6 is divisibleby 4 = {{ 6 is divisibleby(4) }}
+> 6 is divisibleby 3 = {{ 6 is divisibleby(3) }}
+> 6 is divisibleby 2 = {{ 6 is divisibleby(2) }}
+> 6 is divisibleby 2 = {{ 6 is divisibleby 2 }}
+> 6 is divisibleby 3 via func = {{ divisibleby(3,6) }}
+> 
+> macro test
+> ==========
+> 
+> {% macro hoge_macro(i,j) %}
+> {{i}},{{j}}
+> {% endmacro %}
+> 
+> {{ hoge_macro(10,20) }}
+> 
+> {# at this point, delay_macro is not declared, but we can call it. #}
+> {{ delay_macro(10,20) }}
+> 
+> {% macro delay_macro(x,y) %}
+> {{x}} {{ caller(1,2) }} {{y}}
+> {% endmacro %}
+> 
+> {% call(a,b) delay_macro("from", "to") %}
+> inner text!
+> args of call = {{a}},{{b}}
+> macro name = {{delay_macro.name}}
+> via caller = {{delay_macro.caller}}
+> {% endcall %}
 
 ### Version history
 
