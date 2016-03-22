@@ -918,7 +918,7 @@
 
 (define (op-toint x kwargs)
   (cases tvalue x
-	 (Tint (_)  x)
+	 (Tint (v)  (Tint (inexact->exact (round v))))
 	 (Tfloat (v)  (Tint (inexact->exact (round v))))
 	 (else (error 'toint "operand type error" x))))
 
