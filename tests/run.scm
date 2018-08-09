@@ -12,6 +12,8 @@
 (define (alist->models xs)
   (map (lambda (x) (cons (car x) (sexpr->tvalue (cdr x)))) xs))
 
+(lexer-trace #f)
+
 (test-group "runtime test"
 
 

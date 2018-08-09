@@ -444,7 +444,8 @@
                    (lambda () 
                      
                      (let ((c (lexer-token-cache)))
-                       
+
+                       (print "lexer: cache = " c)
                        (let ((t (if (null? c) (lexer)
                                     (let ((t (car c)))
                                       (lexer-token-cache (cdr c))
@@ -453,10 +454,9 @@
                          (if (lexical-token? t)
                              (let ((val (lexical-token-value t))
                                    (cat (lexical-token-category t)))
-                               (sprintf "lexer: token = ~A~A" 
-                                        cat (or (and val (sprintf " (~A)" val)) "")))
+                               (printf "lexer: token = ~A~A~%" 
+                                       cat (or (and val (sprintf " (~A)" val)) "")))
                              (print "lexer: token = " t))
-                         
                          t))))
                
                (make-parse-error file-path)))))

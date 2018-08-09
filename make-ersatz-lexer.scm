@@ -282,7 +282,8 @@ EOF
 	       (else
 		(tok yyline NEQ)))
 
-.     (cases lexer-mode (lexer-curmode)
+.     (begin
+        (cases lexer-mode (lexer-curmode)
 	       (LexerPlain ()
 			   (display yytext (lexer-text-buffer))
 			   (yycontinue))
@@ -303,7 +304,7 @@ EOF
 			      (tok yyline IDENT (string->symbol word))))
 		    ))
 		  ))
-
+        )
 
 <<EOF>> (cases lexer-mode (lexer-curmode)
 	       (LexerPlain ()
@@ -315,5 +316,6 @@ EOF
 	       (else (lexer-error "unexpected end of input (lexer)")))
 EOF
 )))
+
 
 
