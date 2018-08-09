@@ -1,13 +1,13 @@
 
 
-(use test ersatz-lib datatype)
+(import scheme (chicken base) (chicken string) test ersatz datatype)
 
 (define kwargs '())
 
 (define (tval-equal? t1 t2)
   (cases tvalue (eq-eq t1 t2)
-	 (Tbool (ret) ret)
-	 (else (error 'tval-equal "invalid value"))))
+         (Tbool (ret) ret)
+         (else (error 'tval-equal "invalid value"))))
 
 (define (alist->models xs)
   (map (lambda (x) (cons (car x) (sexpr->tvalue (cdr x)))) xs))

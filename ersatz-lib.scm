@@ -21,7 +21,7 @@
 ;; <http://www.gnu.org/licenses/>. 
 ;;
 
-(module ersatz-lib
+(module ersatz
 
 	(
          debug
@@ -69,30 +69,41 @@
 	 op-list op-sublist op-batch
 	 )
 
-	(import scheme chicken)
-	(import (only srfi-1 every any drop fold find filter take last first concatenate)
-		(only irregex string->irregex sre->irregex irregex-search irregex-split irregex-replace/all irregex-match-num-submatches
+	(import scheme (chicken base)
+                (only (chicken file) file-exists? delete-file )
+                (only (chicken process) system)
+                (only (chicken process-context) current-directory)
+                (only (chicken pathname) make-pathname)
+                (only (chicken string) reverse-list->string ->string conc string-intersperse)
+                (only (chicken pretty-print) pp)
+                (only (chicken format) fprintf sprintf printf)
+                (only (chicken sort) sort)
+                (only srfi-1 every any drop fold find filter take last first concatenate)
+		(only (chicken irregex) string->irregex sre->irregex irregex-search irregex-split irregex-replace/all irregex-match-num-submatches
 		      irregex-match-start-index)
-		(only data-structures alist-ref compose ->string string-split conc sort intersperse identity )
-		(only posix current-directory)
-		(only files make-pathname)
-		(only extras fprintf sprintf pp)
-		(only utils read-all)
-		)
-
-	(require-extension datatype lalr lalr-driver uri-generic)
-	(require-library setup-api utf8 utf8-srfi-13 utf8-srfi-14 silex)
-	
-	(import	(only utf8 string-length substring)
+                datatype lalr lalr-driver uri-generic
+                (only utf8 string-length substring)
 		(only utf8-srfi-13 string-null? string-every string-upcase
 		      string-downcase string-titlecase string-concatenate string-trim-both string-pad
 		      string-ci< string<)
 		(only utf8-srfi-14 char-set:lower-case char-set:upper-case char-set:whitespace 
 		      char-set char-set->string char-set-contains?)
 		(only silex lex-tables lexer-make-IS lexer-make-lexer )
-		(only setup-api run execute)
 		)
 
+(define (execute explist)
+  (define (smooth lst)
+    (let ((slst (map ->string lst)))
+      (string-intersperse (cons (car slst) (cdr slst)) " ") ) )
+  (for-each
+   (lambda (cmd)
+     (system cmd))
+   (map smooth explist)))
+
+(define-syntax run
+  (syntax-rules ()
+    ((_ exp ...)
+     (execute (list `exp ...)))))
 
 (define debug (make-parameter 0))
 
@@ -235,6 +246,7 @@
 	 (Tset   (x) (fprintf out "<set>"))
 	 (Tfun   (x) (fprintf out "<function>"))
 	 ))
+
 
 (define-record-printer (texpr x out)
   (cases texpr x

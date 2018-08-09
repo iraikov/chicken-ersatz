@@ -1,0 +1,21 @@
+;; -*- Scheme -*-
+((synopsis "A template engine inspired by Jinja2 and Jingoo.")
+ (license "LGPL-3")
+ (category parsing)
+ (dependencies datatype silex lalr utf8 uri-generic srfi-1)
+ (build-dependencies srfi-13)
+ (test-dependencies test)
+ (components
+  (generated-source-file lexer 
+                         (source "ersatz.l.scm")
+                         (custom-build "gen-lexer"))
+  (generated-source-file parser 
+                         (source "ersatz.grm.scm")
+                         (custom-build "gen-parser"))
+  (extension ersatz
+             (component-dependencies parser lexer)
+             (source "ersatz-lib.scm"))
+  )
+ (author "Ivan Raikov"))
+
+

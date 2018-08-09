@@ -19,7 +19,7 @@
 ;; <http://www.gnu.org/licenses/>.
 ;;
 
-(require-extension lalr)
+(import scheme (chicken base) lalr)
 
 (define template-parser
 

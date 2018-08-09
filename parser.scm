@@ -5,7 +5,7 @@
 ;; Based on the Ocaml Jingoo library, which is in turn based on the
 ;; Python Jinja2 library.
 ;;
-;; Copyright 2012-2014 Ivan Raikov
+;; Copyright 2012-2018 Ivan Raikov
 ;;
 ;; This program is free software: you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -385,10 +385,10 @@
 
   (let ((wlen (string-length word))
 	(cmpfn (lambda (x y) (char=? (string-ref x 0) (string-ref y 0)))))
-    (let ((kv (assoc word opers cmpfn)))
-      (if kv
-	  (cond ((= wlen 1) `(full ,(cdr kv)))
-		((> wlen 1) `(partial ,(car kv) ,(cdr kv)))
+    (let ((v (alist-ref word opers cmpfn)))
+      (if v
+	  (cond ((= wlen 1) `(full ,v))
+		((> wlen 1) `(partial ,word ,v))
 		(else (error 'find-operator "invalid operator word" word)))
 	  '(none)
 	  ))

@@ -212,7 +212,7 @@
 				  (tmpl-ctx-macro-table ctx)
 				  (tmpl-ctx-filter-table ctx)
 				  (tmpl-ctx-buffer ctx)))))
-   (else (error 'set-value "invalid arguments" ctx name value))))
+   (error 'set-value "invalid arguments" ctx name value)))
 
 
 (define (set-values ctx names values)
@@ -918,7 +918,7 @@
 
 (define (op-toint x kwargs)
   (cases tvalue x
-	 (Tint (_)  x)
+	 (Tint (v)  (Tint (inexact->exact (round v))))
 	 (Tfloat (v)  (Tint (inexact->exact (round v))))
 	 (else (error 'toint "operand type error" x))))
 

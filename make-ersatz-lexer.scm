@@ -4,7 +4,7 @@
 ;;
 ;; Based on the Jingoo library by Masaki WATANABE.
 ;;
-;; Copyright 2012-2014 Ivan Raikov.
+;; Copyright 2012-2018 Ivan Raikov.
 ;;
 ;; This program is free software: you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -25,7 +25,7 @@
 ;; required by SILex.
 ;; 
 
-(use srfi-13)
+(import scheme (chicken base) srfi-13)
 
 (define (make-ersatz-lexer output-port
 			   #!key 
