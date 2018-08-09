@@ -5,7 +5,7 @@
 ;; Based on the Ocaml Jingoo library by Masaki WATANABE, which is in
 ;; turn based on the Python Jinja2 library.
 ;;
-;; Copyright 2012-2015 Ivan Raikov.
+;; Copyright 2012-2018 Ivan Raikov.
 ;;
 ;; This program is free software: you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -45,13 +45,14 @@
 	 tmpl-mac-args tmpl-mac-defaults tmpl-mac-code
 	 macro-code?
 	 
-	 tvalue? Tnull Tint Tbool Tfloat Tstr Tobj Tlist Tset Tfun 
+	 tvalue tvalue? Tnull Tint Tbool Tfloat Tstr Tobj Tlist Tset Tfun 
          sexpr->tvalue tvalue->sexpr tvalue->pystr
 	 
-	 tstmt? TextStatement ExpandStatement IfStatement ForStatement IncludeStatement
+	 tstmt tstmt? TextStatement ExpandStatement IfStatement ForStatement IncludeStatement
 	 ExtendsStatement ImportStatement FromImportStatement SetStatement BlockStatement
 	 MacroStatement FilterStatement CallStatement WithStatement AutoEscapeStatement
-	 texpr? IdentExpr LiteralExpr NotOpExpr NegativeOpExpr PlusOpExpr MinusOpExpr
+         
+	 texpr texpr? IdentExpr LiteralExpr NotOpExpr NegativeOpExpr PlusOpExpr MinusOpExpr
 	 TimesOpExpr PowerOpExpr DivOpExpr ModOpExpr AndOpExpr OrOpExpr NotEqOpExpr EqEqOpExpr  
 	 LtOpExpr GtOpExpr  LtEqOpExpr GtEqOpExpr DotExpr BracketExpr ApplyExpr ListExpr SetExpr ObjExpr     
 	 TestOpExpr KeywordExpr AliasExpr InOpExpr    
