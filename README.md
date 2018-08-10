@@ -411,6 +411,7 @@ Template values are represented by the following s-expressions:
 
 ### Version history
 
+- 1.26 : Ported to CHICKEN 5
 - 1.23 : Added built-in function allCombs
 - 1.18 : Renamed groupBy to batch for compatibility with Jinja
 - 1.15 : Added built-in function pad
@@ -427,7 +428,7 @@ Template values are represented by the following s-expressions:
 ### License
 
 >
-> Copyright 2012-2015 Ivan Raikov. 
+> Copyright 2012-2018 Ivan Raikov. 
 > 
 > This program is free software: you can redistribute it and/or modify
 > it under the terms of the GNU General Public License as published by
