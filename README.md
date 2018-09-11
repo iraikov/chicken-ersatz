@@ -167,7 +167,7 @@ Template values are represented by the following s-expressions:
 
 ### `from-string`
 
-```
+```scheme
   ;; expand and escape
   (from-string "{{danger}}" models: `((danger . ,(Tstr "<script>alert(1)</script>" ))))
    
@@ -243,7 +243,7 @@ Template values are represented by the following s-expressions:
 
 ### `from-file`
 
-```
+```scheme
   (from-file "cheatsheet.tmpl" env: (template-std-env search-path: '("dir/tmpl")))
 ```
 
