@@ -65,7 +65,7 @@
       (close-input-port in)
 
       (let ((module-contents 
-	     `(module ,lexer-proc * (import scheme (chicken base) (chicken string))
+	     `(module ,lexer-proc * (import scheme (chicken base) (chicken format) (chicken string))
 
 		      (import datatype utf8-srfi-13 utf8-srfi-14 lalr-driver)
 

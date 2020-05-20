@@ -95,6 +95,7 @@ Representation of values in the template language. The value definitions are:
 - `(Tobj   (x tvalue-alist?))` : template objects; represented as alists where the key is a symbol and the value is a `tvalue`
 - `(Tlist  (x tvalue-list?))` : lists
 - `(Tset   (x tvalue-list?))` : sets
+- `(Tvector (x vector?))` : vectors
 - `(Tfun   (p procedure?))` : template functions
 
 Template values are represented by the following s-expressions:
@@ -428,7 +429,7 @@ Template values are represented by the following s-expressions:
 ### License
 
 >
-> Copyright 2012-2018 Ivan Raikov. 
+> Copyright 2012-2020 Ivan Raikov. 
 > 
 > This program is free software: you can redistribute it and/or modify
 > it under the terms of the GNU General Public License as published by
