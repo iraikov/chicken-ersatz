@@ -5,7 +5,7 @@
 ;; Based on the Ocaml Jingoo library by Masaki WATANABE, which is in
 ;; turn based on the Python Jinja2 library.
 ;;
-;; Copyright 2012-2018 Ivan Raikov.
+;; Copyright 2012-2020 Ivan Raikov.
 ;;
 ;; This program is free software: you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -45,7 +45,7 @@
 	 tmpl-mac-args tmpl-mac-defaults tmpl-mac-code
 	 macro-code?
 	 
-	 tvalue tvalue? Tnull Tint Tbool Tfloat Tstr Tobj Tlist Tset Tfun 
+	 tvalue tvalue? Tnull Tint Tbool Tfloat Tstr Tobj Tlist Tset Tfun Tvector 
          sexpr->tvalue tvalue->sexpr tvalue->pystr
 	 
 	 tstmt tstmt? TextStatement ExpandStatement IfStatement ForStatement IncludeStatement
@@ -68,6 +68,7 @@
 	 op-capitalize op-title op-escape-html op-urlize op-striptags op-trim op-pad
 	 op-wordcount op-sort op-dictsort
 	 op-list op-sublist op-batch
+         op-vector op-ref op-update op-subvector
 	 )
 
 	(import scheme (chicken base)
@@ -174,14 +175,15 @@
 
 (define-datatype tvalue tvalue?
   (Tnull)
-  (Tint   (i integer?))
-  (Tbool  (b boolean?))
-  (Tfloat (n number?)) 
-  (Tstr   (s string?))
-  (Tobj   (x tvalue-alist?))
-  (Tlist  (x tvalue-list?))
-  (Tset   (x tvalue-list?))
-  (Tfun   (p procedure?)))
+  (Tint    (i integer?))
+  (Tbool   (b boolean?))
+  (Tfloat  (n number?)) 
+  (Tstr    (s string?))
+  (Tobj    (x tvalue-alist?))
+  (Tlist   (x tvalue-list?))
+  (Tset    (x tvalue-list?))
+  (Tfun    (p procedure?))
+  (Tvector (v vector?)))
 
 
 (define (tvalue-stringp v)
@@ -226,6 +228,12 @@
 	 (else (Tbool #f))))
   
 
+(define (tvalue-vectorp v)
+  (cases tvalue v
+	 (Tvector (v) (Tbool #t))
+	 (else (Tbool #f))))
+  
+
 (define tvalue-alist?
   (list-of (lambda (x) (and (symbol? (car x)) (tvalue? (cdr x))))))
 
@@ -246,6 +254,7 @@
 	 (Tlist  (x) (fprintf out "<list>"))
 	 (Tset   (x) (fprintf out "<set>"))
 	 (Tfun   (x) (fprintf out "<function>"))
+	 (Tvector   (x) (fprintf out "<vector>"))
 	 ))
 
 
@@ -293,6 +302,7 @@
 	 (Tlist  (x) "list")
 	 (Tset   (x) "set")
 	 (Tfun   (x) "function")
+	 (Tvector   (x) "vector")
 	 ))
 
 (define (sexpr->tvalue x)
@@ -304,7 +314,7 @@
    ((char? x)       (Tstr (->string x)))
    ((symbol? x)     (Tstr (->string x)))
    ((procedure? x)  (Tfun x))
-   ((vector? x)     (Tset (map sexpr->tvalue (vector->list x))))
+   ((vector? x)     (Tvector (list->vector (map sexpr->tvalue (vector->list x)))))
    ((null? x)       (Tlist '()))
    ((pair? x)
     (cond
@@ -327,6 +337,7 @@
          (Tlist  (vs)  (map tvalue->sexpr vs))
          (Tset   (vs)  (map tvalue->sexpr vs))
          (Tfun   (p)   p)
+         (Tvector (v)  v)
          ))
 
 
@@ -344,6 +355,7 @@
                                                                             (tvalue->pystr (cdr x)))) fs) ", ")))
          (Tset   (vs)  (sprintf "{~A}" (join-list (map tvalue->pystr vs) ", ")))
          (Tfun   (p)   p)
+         (Tvector (v)  (sprintf "#[~A]" (join-list (map tvalue->pystr (vector->list v)) ", ")))
          ))
 
 
@@ -558,7 +570,13 @@
     (replace   . ,(func-arg3 op-replace))
     (substring . ,(func-arg3 op-substring))
     (sublist   . ,(func-arg3 op-sublist))
-    (btach     . ,(func-arg2 op-batch))
+    (batch     . ,(func-arg2 op-batch))
+
+    ;; vector operations
+    (vector       . ,(func-arg1 op-vector))
+    (subvector    . ,(func-arg3 op-subvector))
+    (ref          . ,(func-arg2 op-ref))
+    (update       . ,(func-arg3 op-update))
     
     ;; built-in tests 
     (divisibleby . ,(func-arg2 test-divisibleby))

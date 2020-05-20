@@ -5,7 +5,7 @@
 ;; Based on the Ocaml Jingoo library, which is in turn based on the
 ;; Python Jinja2 library.
 ;;
-;; Copyright 2012-2014 Ivan Raikov
+;; Copyright 2012-2020 Ivan Raikov
 ;;
 ;; This program is free software: you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -111,6 +111,11 @@
   (cases tvalue x
 	 (Tset (lst) lst)
 	 (else (error 'unbox-set "invalid argument" x))))
+
+(define (unbox-vector x)
+  (cases tvalue x
+	 (Tvector (v) v)
+	 (else (error 'unbox-vector "invalid argument" x))))
 
 (define (unbox-obj x)
   (cases tvalue x
@@ -359,12 +364,36 @@
   )
 
 
+(define (iter-make-ctx ctx iterator item len i)
+  (let* (
+         (cycle (Tfun (lambda (args kwargs)
+                        (let ((alen (length args)))
+                          (list-ref args (modulo i alen))))))
+         (ctx   (push-frame ctx))
+         (ctx   (bind-names ctx iterator item))
+         (ctx   (set-value ctx 'loop
+                           (Tobj `((index0    . ,(Tint i))
+                                   (index     . ,(Tint (+ i 1)))
+                                   (revindex0 . ,(Tint (- len i 1)))
+                                   (revindex  . ,(Tint (- len i)))
+                                   (first     . ,(Tbool (= i 0)))
+                                   (last      . ,(Tbool (= i (- len 1))))
+                                   (length    . ,(Tint len))
+                                   (cycle     . ,cycle)))))
+         
+         )
+    ctx
+    )
+  )
+
+
 (define (iter ctx iterator f iterable)
 
   (let* ((lst (cases tvalue iterable
 		    (Tlist (lst) lst)
 		    (Tset (lst) lst)
 		    (Tobj (alst) (map (lambda (x) (Tset (list (Tstr (->string (car x))) (cdr x)))) alst))
+                    (Tvector (v) (vector->list v))
 		    (else (error 'iter "object not iterable" iterable))))
 	 (len (length lst)))
 
@@ -374,20 +403,7 @@
       (if (null? lst) ctx
 	  
 	  (let ((item (car lst)))
-	    (let* ((ctx   (push-frame ctx))
-		   (ctx   (bind-names ctx iterator item))
-		   (cycle (Tfun (lambda (args kwargs)
-				  (let ((alen (length args)))
-				    (list-ref args (modulo i alen))))))
-		   (ctx    (set-value ctx 'loop
-				    (Tobj `((index0    . ,(Tint i))
-					    (index     . ,(Tint (+ i 1)))
-					    (revindex0 . ,(Tint (- len i 1)))
-					    (revindex  . ,(Tint (- len i)))
-					    (first     . ,(Tbool (= i 0)))
-					    (last      . ,(Tbool (= i (- len 1))))
-					    (length    . ,(Tint len))
-					    (cycle     . ,cycle)))))
+	    (let* ((ctx (iter-make-ctx ctx iterator item len i))
 		   (ctx  (f ctx))
 		   (ctx  (pop-frame ctx)))
 	      
@@ -477,6 +493,7 @@
 	 (Tfloat (x) (not (= x 0.0)))
 	 (Tlist (x)  (> (length x) 0))
 	 (Tset  (x)  (> (length x) 0))
+	 (Tvector (x)  (> (vector-length x) 0))
 	 (Tobj  (x)  (> (length x) 0))
 	 (Tnull ()   #f)
 	 (Tfun (f)   (error 'is-true "operand type error" x))))
@@ -554,6 +571,8 @@
   (cases tvalue x
 	 (Tlist (_) (Tbool #t))
 	 (Tset (_)  (Tbool #t))
+	 (Tvector (_)  (Tbool #t))
+	 (Tobj (_)  (Tbool #t))
 	 (else (Tbool #f))))
 
 	 
@@ -615,6 +634,10 @@
 	 (Tset (x)
 	       (cases tvalue target
 		      (Tset (y) (Tbool (equal? x y)))
+		      (else (Tbool #f))))
+	 (Tvector (x)
+	       (cases tvalue target
+		      (Tvector (y) (Tbool (equal? x y)))
 		      (else (Tbool #f))))
 	 (else (Tbool #f))
 	 ))
@@ -791,6 +814,10 @@
 		 (cases tvalue right
 			(Tlist (x2) (list-same left right))
 			(else (Tbool #f))))
+	 (Tvector (x1)
+		 (cases tvalue right
+			(Tvector (x2) (vector-same left right))
+			(else (Tbool #f))))
 	 (Tobj (x1)
 		 (cases tvalue right
 			(Tobj (x2) (obj-same left right))
@@ -805,6 +832,15 @@
     (if (not (= (length l1) (length l2))) 
 	(Tbool #f)
 	(let ((result (every (compose unbox-bool eq-eq) l1 l2)))
+	  (Tbool result)))
+    ))
+
+(define (vector-same v1 v2)
+  (let ((vec1 (unbox-vector v1))
+	(vec2 (unbox-vector v2)))
+    (if (not (= (vector-length vec1) (vector-length vec2))) 
+	(Tbool #f)
+	(let ((result (every (compose unbox-bool eq-eq) (vector->list vec1) (vector->list vec2))))
 	  (Tbool result)))
     ))
 
@@ -935,6 +971,8 @@
     (cases tvalue lst
 	   (Tlist (lst)
 		  (Tstr (string-concatenate (intersperse (map ->string lst) str))))
+	   (Tvector (v)
+		  (Tstr (string-concatenate (intersperse (map ->string (vector->list lst)) str))))
 	   (Tset (lst)
 		 (Tstr (string-concatenate (intersperse (map ->string lst) str))))
 	   (else (error 'join "operand type error" join-str lst)))))
@@ -1043,6 +1081,7 @@
   (cases tvalue x
 	 (Tlist (lst) (Tint (length lst)))
 	 (Tset (lst) (Tint (length lst)))
+	 (Tvector (v) (Tint (vector-length v)))
 	 (Tstr (str) (Tint (string-length str)))
 	 (else (error 'length "operand type error" x))))
 
@@ -1084,6 +1123,14 @@
   (let ((lst (unbox-list lst)))
     (first lst)))
 
+(define (op-ref vec i kwargs)
+  (let ((vec (unbox-vector vec)))
+    (vector-ref vec i)))
+
+(define (op-update vec i val kwargs)
+  (let ((vec (unbox-vector vec)))
+    (vector-set! vec i val)))
+
 
 (define (op-list value kwargs)
   (cases tvalue value
@@ -1098,6 +1145,7 @@
 			 (iter (cons s1 ret) (- i 1)))
 		       ))
 		 ))
+	 (Tvector (vec) (Tlist (vector->list vec)))
 	 (else (error 'list "operand type error" value))
 	 ))
 
@@ -1118,6 +1166,23 @@
 	 (else (error 'list "operand type error" value))
 	 ))
 
+(define (op-vector value kwargs)
+  (cases tvalue value
+	 (Tvector (vec) value)
+	 (Tlist (lst) (Tvector (list->vector lst)))
+	 (Tset (lst)  (Tvector (list->vector lst)))
+	 (Tstr (str)
+	       (let ((len (string-length str)))
+		 (let iter ((ret '()) (i len))
+		   (if (zero? i)
+		       (Tvector (list->vector ret))
+		       (let ((s1 (Tstr (substring str (- i 1) i))))
+			 (iter (cons s1 ret) (- i 1)))
+		       ))
+		 ))
+	 (else (error 'vector "operand type error" value))
+	 ))
+
 
 (define (op-slice len value kwargs #!key (defaults `((fill_with . ,(Tnull)))))
   (op-batch len (op-list value '()) kwargs))
@@ -1132,6 +1197,18 @@
 	   (Tnull ()
 		  (Tlist (drop lst base)))
 	   (else (error 'sublist "operand type error" count)))
+    ))
+
+
+(define (op-subvector base count v kwargs)
+  (let ((base (unbox-int base))
+	(vec  (unbox-vector v)))
+    (cases tvalue count
+	   (Tint (count)
+		 (Tvector (subvector vec base count)))
+	   (Tnull ()
+		  (Tvector (subvector vec base)))
+	   (else (error 'subvector "operand type error" count)))
     ))
 
 

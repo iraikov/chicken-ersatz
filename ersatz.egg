@@ -3,7 +3,6 @@
  (license "LGPL-3")
  (category parsing)
  (dependencies datatype silex lalr utf8 uri-generic srfi-1)
- (build-dependencies srfi-13)
  (test-dependencies test)
  (components
   (generated-source-file lexer 

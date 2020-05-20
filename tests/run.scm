@@ -464,3 +464,4 @@ EOF
 (print (from-file "cheatsheet.tmpl" 
 		  env: (template-std-env search-path: '("tests/tmpl" "tmpl"))))
  
+(test-exit)

@@ -25,7 +25,7 @@
 ;; required by SILex.
 ;; 
 
-(import scheme (chicken base) (chicken format) srfi-13)
+(import scheme (chicken base) (chicken format) utf8-srfi-13)
 
 (define (make-ersatz-lexer output-port
 			   #!key 

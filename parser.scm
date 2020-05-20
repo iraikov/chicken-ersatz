@@ -65,20 +65,9 @@
       (close-input-port in)
 
       (let ((module-contents 
-	     `(module ,lexer-proc * (import scheme chicken) 
+	     `(module ,lexer-proc * (import scheme (chicken base) (chicken string))
 
-		      (import (only data-structures alist-ref))
-		      (require-extension datatype lalr-driver)
-		      (require-library utf8 utf8-srfi-13 utf8-srfi-14)
-	
-		      (import	(only utf8 string-length substring)
-				(only utf8-srfi-13 string-null? string-every string-upcase
-				      string-downcase string-titlecase string-concatenate string-join string-trim-both
-				      string-ci< string<)
-				(only utf8-srfi-14 char-set:lower-case char-set:upper-case char-set:whitespace 
-				      char-set char-set->string char-set-contains?)
-				)
-
+		      (import datatype utf8-srfi-13 utf8-srfi-14 lalr-driver)
 
 		      (define-syntax tok
 			(syntax-rules ()
