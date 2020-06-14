@@ -13,7 +13,7 @@
                          (custom-build "gen-parser"))
   (extension ersatz
              (component-dependencies parser lexer)
-             (csc-options "-O0" "-d2")
+             ;;(csc-options "-O0" "-d2")
              (source "ersatz-lib.scm"))
   )
  (author "Ivan Raikov"))

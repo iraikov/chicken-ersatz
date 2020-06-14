@@ -300,7 +300,6 @@
                                               (cons `(,name . ,(eval-expr env ctx expr)) h)))
                                             '() bind-exprs)))
                                (let ((ctx1 (set-namespace ctx ns h)))
-                                 (print "ctx1 = " ctx1)
                                  ctx1)))
 
 	 (FilterStatement (nexpr stmts)
