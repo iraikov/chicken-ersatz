@@ -285,7 +285,23 @@
 				     (bind-names ctx (ident-names-of ident-lst)
 						 (eval-expr env ctx expr))))
 				ctx1))
+                   
+                   (DotExpr (ns-expr prop-expr)
+                            (let ((ns (ident-expr->name ns-expr))
+                                  (prop (ident-expr->name prop-expr)))
+                              (extend-namespace ctx ns prop (eval-expr env ctx expr))))
+                            
 		   (else (error 'eval-statement "invalid set expression" setexpr))))
+         
+         (NamespaceStatement (ns bind-exprs)
+                             (let ((h (fold (lambda (bind-expr h)
+                                              (let ((name (car bind-expr))
+                                                    (expr (cdr bind-expr)))
+                                              (cons `(,name . ,(eval-expr env ctx expr)) h)))
+                                            '() bind-exprs)))
+                               (let ((ctx1 (set-namespace ctx ns h)))
+                                 (print "ctx1 = " ctx1)
+                                 ctx1)))
 
 	 (FilterStatement (nexpr stmts)
 	    (let ((name (ident-expr->name nexpr)))

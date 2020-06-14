@@ -37,7 +37,8 @@
     STRING TEXT EXPAND ENDEXPAND TRUE FALSE NULL 
     COLON IF ELSE ELSEIF ENDIF NOT
 
-    (left:  OR AND LT GT EQ EQEQ NEQ PLUS MINUS)
+    (left: OR AND)
+    (left:  LT GT EQ EQEQ NEQ PLUS MINUS)
     (left:  TIMES DIV MOD VLINE COMMA RBRACE RBRACKET RPAREN)
     (right: POWER LBRACE LBRACKET LPAREN IN IS AS DOTFIELD)
     (nonassoc: UMINUS)
@@ -58,7 +59,9 @@
    (stmt
     (EXPAND expr ENDEXPAND)      : (ExpandStatement $2) 
     (error ENDEXPAND)
-    (SET ident-list EQ expr)     : (SetStatement (SetExpr $2) $4)
+    (SET ident DOTFIELD EQ expr) : (SetStatement (DotExpr $2 (IdentExpr (string->symbol $3))) $5)
+    (SET ident-list EQ expr)     :  (let ((stmt (parse-namespace-statement $2 $4)))
+                                      (or stmt (SetStatement (SetExpr $2) $4)))
     (EXTENDS STRING)             : (ExtendsStatement $2)
     (BLOCK ident ENDBLOCK)       : (BlockStatement $2 #f '())
     (BLOCK ident ENDBLOCK ident) : (BlockStatement $2 $4 '() )

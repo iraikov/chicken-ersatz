@@ -2,6 +2,13 @@
 
 {% block main %}
 
+{% set error = namespace (count=0) %}
+
+{% macro assert (b) %}
+  {% if not b %}Assertion failed!{% endif %}
+{% endmacro %}
+
+
 include test
 ============
 
@@ -46,6 +53,13 @@ set test
 set hoge = "ok"
 {% set hoge = "ok" %}
 now hoge = {{ hoge }}
+
+set foo, bar = ("foo", "bar")
+{% set foo, bar = ("foo", "bar") %}
+
+{{ assert (foo == 'foo' and bar == 'bar') }}
+foo -> {{ foo }}
+bar -> {{ bar }}
 
 if test
 =======
@@ -214,6 +228,35 @@ I love Scheme.
 
 {{ other_macro(50,60) }}
 
+
+Basic namespace support
+========================
+{% set ns = namespace (foo=0, bar='bar') %}
+
+{% for i in [1,2,3] %}
+  {% set ns.foo = ns.foo + i %}
+  {% set ns.bar = ns.bar + i %}
+{% endfor %}
+
+
+{% if ns.foo == 6 and ns.bar == 'bar123' %}
+  {{ assert (false) }}
+   Namespace works :)
+{% else %}
+  {{ assert (false) }}
+   Namespace is broken :(
+{% endif %}
+
+
+========================
+
+{% if error.count != 0 %}
+  {{ error.count }} error{% if error.count > 1 %}s{% endif %} detected
+{% else %}
+  No errors detected!
+{% endif %}
+
+{# end of 'main' block #}
 {% endblock main %}
 
 {% macro test_caller(x,y,z,age=120) %}

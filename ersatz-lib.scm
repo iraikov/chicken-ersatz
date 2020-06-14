@@ -37,7 +37,7 @@
 	 tmpl-env-autoescape tmpl-env-search-path tmpl-env-filters tmpl-env-lexer
 	 
 	 template-context? make-template-context
-	 tmpl-ctx-frame-stack tmpl-ctx-macro-table tmpl-ctx-filter-table tmpl-ctx-buffer
+	 tmpl-ctx-frame-stack tmpl-ctx-macro-table tmpl-ctx-namespace-table tmpl-ctx-filter-table tmpl-ctx-buffer
 	 
 	 template-context-frame? 
 
@@ -49,7 +49,7 @@
          sexpr->tvalue tvalue->sexpr tvalue->pystr
 	 
 	 tstmt tstmt? TextStatement ExpandStatement IfStatement ForStatement IncludeStatement
-	 ExtendsStatement ImportStatement FromImportStatement SetStatement BlockStatement
+	 ExtendsStatement ImportStatement FromImportStatement SetStatement BlockStatement NamespaceStatement
 	 MacroStatement FilterStatement CallStatement WithStatement AutoEscapeStatement
          
 	 texpr texpr? IdentExpr LiteralExpr NotOpExpr NegativeOpExpr PlusOpExpr MinusOpExpr
@@ -148,10 +148,11 @@
 ;;
 
 (define-record-type template-context
-  (make-template-context frame-stack macro-table filter-table buffer)
+  (make-template-context frame-stack macro-table namespace-table filter-table buffer)
   template-context?
   (frame-stack   tmpl-ctx-frame-stack)
   (macro-table   tmpl-ctx-macro-table)
+  (namespace-table   tmpl-ctx-namespace-table)
   (filter-table  tmpl-ctx-filter-table)
   (buffer        tmpl-ctx-buffer))
 
@@ -239,6 +240,9 @@
 
 
 (define tvalue-list? (list-of tvalue?))
+
+(define texpr-alist?
+  (list-of (lambda (x) (and (symbol? (car x)) (texpr? (cdr x))))))
 
 
 
@@ -406,6 +410,8 @@
   (SetStatement (e1 texpr?)
 		(e2 texpr?))
 
+  (NamespaceStatement (s symbol?) (bs texpr-alist?))
+
   (BlockStatement  (e texpr?) (f (lambda (x) (or (not x) (texpr? x))))
 		   (b template-ast?))
 
@@ -449,6 +455,8 @@
                               (fprintf out "<FromImportStatement ~A ~A>" s w))
          (SetStatement (e1 e2)
                        (fprintf out "<SetStatement ~A ~A>" e1 e2))
+         (NamespaceStatement (s bs)
+                             (fprintf out "<NamespaceStatement ~A : ~A>" s bs))
          (BlockStatement  (e f b)
                           (fprintf out "<BlockStatement ~A ~A ~A>" e f b))
          (MacroStatement  (e a b)
@@ -604,6 +612,7 @@
            (append (tmpl-env-filters env) 
                    top-frame)) ;; frame-stack 
      '() ;; macro-table
+     '() ;; namespace-table
      '() ;; filter-table 
      (open-buffer) ;; buffer
      )))

@@ -176,6 +176,7 @@
   (make-template-context
    (tmpl-ctx-frame-stack ctx)
    (tmpl-ctx-macro-table ctx)
+   (tmpl-ctx-namespace-table ctx)
    (tmpl-ctx-filter-table ctx)
    buffer))
 
@@ -185,6 +186,7 @@
 	 (let ((frame-stack (tmpl-ctx-frame-stack ctx)))
 	   (make-template-context (cons '() frame-stack)
 				  (tmpl-ctx-macro-table ctx)
+				  (tmpl-ctx-namespace-table ctx)
 				  (tmpl-ctx-filter-table ctx)
 				  (tmpl-ctx-buffer ctx)))))
 
@@ -197,6 +199,7 @@
 				       (cdr frame-stack))))
 		 (make-template-context frame-stack1
 					(tmpl-ctx-macro-table ctx)
+					(tmpl-ctx-namespace-table ctx)
 					(tmpl-ctx-filter-table ctx)
 					(tmpl-ctx-buffer ctx))))
 	   )))
@@ -210,11 +213,13 @@
      (if (null? frame-stack)
 	 (make-template-context (cons `((,name . ,value)) frame-stack)
 				(tmpl-ctx-macro-table ctx)
+				(tmpl-ctx-namespace-table ctx)
 				(tmpl-ctx-filter-table ctx)
 				(tmpl-ctx-buffer ctx))
 	 (let ((frame (car frame-stack)))
 	   (make-template-context (cons (cons `(,name . ,value) frame) (cdr frame-stack))
 				  (tmpl-ctx-macro-table ctx)
+				  (tmpl-ctx-namespace-table ctx)
 				  (tmpl-ctx-filter-table ctx)
 				  (tmpl-ctx-buffer ctx)))))
    (error 'set-value "invalid arguments" ctx name value)))
@@ -238,11 +243,38 @@
 
 (define (get-value ctx name)
   (let recur ((frame-stack (tmpl-ctx-frame-stack ctx)))
-    (if (null? frame-stack) (Tnull)
+    (if (null? frame-stack)
+        (let ((v (alist-ref name (tmpl-ctx-namespace-table ctx))))
+          (or (and v (Tobj v)) (Tnull)))
 	(cond ((assoc name (car frame-stack)) => cdr)
 	      (else (recur (cdr frame-stack))))
 	)))
 
+
+(define (set-namespace ctx ns bindings)
+  (print "bindings = " bindings)
+  (and (template-context? ctx) (symbol? ns) (tvalue-alist? bindings)
+       (let ((namespace-table (tmpl-ctx-namespace-table ctx)))
+         (print "namespace-table = " namespace-table)
+	 (make-template-context (tmpl-ctx-frame-stack ctx)
+				(tmpl-ctx-macro-table ctx)
+                                (cons (cons ns bindings) namespace-table)
+				(tmpl-ctx-filter-table ctx)
+				(tmpl-ctx-buffer ctx)))))
+
+(define (extend-namespace ctx ns name value)
+  (print "extend-namespace: value = " value)
+  (and (template-context? ctx) (symbol? ns) (symbol? name) (tvalue? value)
+       (let ((namespace-table (tmpl-ctx-namespace-table ctx)))
+         (let ((namespace-bindings (alist-ref ns namespace-table)))
+           (print "namespace-bindings = " namespace-bindings)
+           (and namespace-bindings
+                (make-template-context (tmpl-ctx-frame-stack ctx)
+                                       (tmpl-ctx-macro-table ctx)
+                                       (alist-update ns (alist-update name value namespace-bindings) namespace-table)
+                                       (tmpl-ctx-filter-table ctx)
+                                       (tmpl-ctx-buffer ctx)))))
+       ))
 
 (define-inline (get-func ctx name)
   (let ((value (get-value ctx name)))
@@ -257,6 +289,7 @@
        (let ((macro-table (tmpl-ctx-macro-table ctx)))
 	 (make-template-context (tmpl-ctx-frame-stack ctx)
 				(cons (cons name macro) macro-table)
+				(tmpl-ctx-namespace-table ctx)
 				(tmpl-ctx-filter-table ctx)
 				(tmpl-ctx-buffer ctx)))))
 
@@ -273,6 +306,7 @@
        (let ((macro-table (tmpl-ctx-macro-table ctx)))
 	 (make-template-context (tmpl-ctx-frame-stack ctx)
 				(if (null? macro-table) '() (cdr macro-table))
+				(tmpl-ctx-namespace-table ctx)
 				(tmpl-ctx-filter-table ctx)
 				(tmpl-ctx-buffer ctx)))))
 
@@ -282,6 +316,7 @@
        (let ((filter-table (tmpl-ctx-filter-table ctx)))
 	 (make-template-context (tmpl-ctx-frame-stack ctx)
 				(tmpl-ctx-macro-table ctx)
+                                (tmpl-ctx-namespace-table ctx)
 				(cons name filter-table)
 				(tmpl-ctx-buffer ctx)))))
 
@@ -291,6 +326,7 @@
        (let ((filter-table (tmpl-ctx-filter-table ctx)))
 	 (make-template-context (tmpl-ctx-frame-stack ctx)
 				(tmpl-ctx-macro-table ctx)
+                                (tmpl-ctx-namespace-table ctx)
 				(if (null? filter-table) '() (cdr filter-table))
 				(tmpl-ctx-buffer ctx)))))
 

@@ -5,7 +5,7 @@
 ;; Based on the Ocaml Jingoo library, which is in turn based on the
 ;; Python Jinja2 library.
 ;;
-;; Copyright 2012-2018 Ivan Raikov
+;; Copyright 2012-2020 Ivan Raikov
 ;;
 ;; This program is free software: you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -405,6 +405,25 @@
 	     [else (error loc-str (conc msg arg))]
 	     ))))
 
+
+(define (parse-namespace-statement ident-list expr)
+  (cases texpr expr
+         (ApplyExpr (ident-expr init)
+                    (let ((k (ident-expr->name ident-expr)))
+                      (case k
+                        ((namespace)
+                         (and (= (length ident-list) 1)
+                              (let ((ns (ident-expr->name (car ident-list)))
+                                    (bs (map (lambda (x)
+                                               (cases texpr x
+                                                      (KeywordExpr (n v) `(,(ident-expr->name n) . ,v))
+                                                      (else #f)))
+                                             init)))
+                                (NamespaceStatement ns bs)
+                                ))
+                         )
+                        (else #f))))
+         (else #f)))
 
 (include "ersatz.grm.scm")
 
