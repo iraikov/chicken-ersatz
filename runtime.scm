@@ -252,10 +252,8 @@
 
 
 (define (set-namespace ctx ns bindings)
-  (print "bindings = " bindings)
   (and (template-context? ctx) (symbol? ns) (tvalue-alist? bindings)
        (let ((namespace-table (tmpl-ctx-namespace-table ctx)))
-         (print "namespace-table = " namespace-table)
 	 (make-template-context (tmpl-ctx-frame-stack ctx)
 				(tmpl-ctx-macro-table ctx)
                                 (cons (cons ns bindings) namespace-table)
@@ -263,11 +261,9 @@
 				(tmpl-ctx-buffer ctx)))))
 
 (define (extend-namespace ctx ns name value)
-  (print "extend-namespace: value = " value)
   (and (template-context? ctx) (symbol? ns) (symbol? name) (tvalue? value)
        (let ((namespace-table (tmpl-ctx-namespace-table ctx)))
          (let ((namespace-bindings (alist-ref ns namespace-table)))
-           (print "namespace-bindings = " namespace-bindings)
            (and namespace-bindings
                 (make-template-context (tmpl-ctx-frame-stack ctx)
                                        (tmpl-ctx-macro-table ctx)
