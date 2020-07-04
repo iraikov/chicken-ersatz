@@ -1293,6 +1293,49 @@
       ))
   )
 
+(define (alist-extend k v lst #!key (cmp eqv?) (extend cons) (initial list))
+  (print "k = " k)
+  (print "tvalue? k = " (tvalue? k))
+  (let loop ((lst lst))
+    (cond ((null? lst)
+           (list (cons k (initial v))))
+          ((not (pair? lst))
+           (error 'alist-extend "bad argument type" lst))
+          (else
+           (let ((a (car lst)))
+             (print "a = " a)
+             (cond ((not (pair? a))
+                    (error 'alist-extend "bad argument type" a))
+                   ((cmp k (car a))
+                    (let ((u (cdr a)))
+                      (cons (cons k (extend v u)) (cdr lst))))
+                   (else
+                    (cons a (loop (cdr lst))))))))))
+
+
+(define (group-by foldf key seq)
+  (print seq)
+  (let ((groups (foldf (lambda (x ax) (let ((v (tobjval-lookup x key)))
+                                        (alist-extend v x ax cmp: (compose unbox-bool eq-eq))))
+                       '() seq)))
+    (print groups)
+    (Tlist (map (lambda (group) 
+                  (Tobj `((grouper    . ,(car group))
+                          (list       . ,(Tlist (cdr group)))))
+                  ) groups)
+           ))
+    )
+
+(define (op-groupby keyval value kwargs)
+  (let ((key (unbox-string keyval)))
+    (cases tvalue value
+           (Tlist (l) (group-by fold (string->symbol key) l))
+           (Tvector (v) (group-by vector-fold (string->symbol key) v))
+	   (else (error 'groupby "operand type error" value))
+	   ))
+  )
+           
+
 
 (define (op-sort lst kwargs)
   (let ((lst (unbox-list lst)))
@@ -1304,7 +1347,7 @@
 		 (Tlist (map Tint (sort (cons i (map unbox-int (cdr lst))) <))))
 	   (Tfloat (i)
 		   (Tlist (map Tfloat (sort (cons i (map unbox-float (cdr lst))) <))))
-	   (else "operand type error" lst))
+	   (else (error 'sort "operand type error" lst)))
 	   ))
 		 
 

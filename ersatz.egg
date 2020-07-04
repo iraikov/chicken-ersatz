@@ -2,7 +2,7 @@
 ((synopsis "A template engine inspired by Jinja2 and Jingoo.")
  (license "LGPL-3")
  (category parsing)
- (dependencies datatype silex lalr utf8 uri-generic srfi-1)
+ (dependencies datatype silex lalr utf8 uri-generic srfi-1 vector-lib)
  (test-dependencies test)
  (components
   (generated-source-file lexer 

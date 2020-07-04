@@ -67,7 +67,7 @@
 	 op-replace op-truncate
 	 op-capitalize op-title op-escape-html op-urlize op-striptags op-trim op-pad
 	 op-wordcount op-sort op-dictsort
-	 op-list op-sublist op-batch
+	 op-list op-sublist op-batch op-groupby
          op-vector op-ref op-update op-subvector
 	 )
 
@@ -91,6 +91,7 @@
 		(only utf8-srfi-14 char-set:lower-case char-set:upper-case char-set:whitespace 
 		      char-set char-set->string char-set-contains?)
 		(only silex lex-tables lexer-make-IS lexer-make-lexer )
+                (only vector-lib vector-fold)
 		)
 
 (define (execute explist)
@@ -565,6 +566,7 @@
     (attr    . ,(func-arg2 op-attr))
     (haskey  . ,(func-arg2 op-haskey))
 
+    (groupby . ,(func-arg2 op-groupby))
     (batch   . ,(func-arg2 op-batch))
     (default . ,(func-arg2 op-default))
     (d       . ,(func-arg2 op-default)) ;; alias for default 
