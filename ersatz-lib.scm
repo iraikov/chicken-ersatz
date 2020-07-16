@@ -66,7 +66,7 @@
 	 op-upper op-lower op-join op-substring
 	 op-replace op-truncate
 	 op-capitalize op-title op-escape-html op-urlize op-striptags op-trim op-pad
-	 op-wordcount op-sort op-dictsort
+	 op-wordcount op-sort op-dictsort op-map
 	 op-list op-sublist op-batch op-groupby
          op-vector op-ref op-update op-subvector
 	 )
@@ -76,7 +76,7 @@
                 (only (chicken process) system)
                 (only (chicken process-context) current-directory)
                 (only (chicken pathname) make-pathname)
-                (only (chicken string) reverse-list->string ->string conc string-intersperse)
+                (only (chicken string) reverse-list->string ->string conc string-intersperse string-split)
                 (only (chicken pretty-print) pp)
                 (only (chicken format) fprintf sprintf printf)
                 (only (chicken sort) sort)
@@ -550,6 +550,7 @@
     (strlen     . ,(func-arg1 op-strlen))
     (striptags  . ,(func-arg1 op-striptags))
     (sort       . ,(func-arg1 op-sort))
+    (op-map     . ,(func-arg2 op-map))
     (upper      . ,(func-arg1 op-upper))
     (reverse    . ,(func-arg1 op-reverse))
     (append     . ,(func-arg2 op-append))
