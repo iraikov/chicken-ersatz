@@ -418,6 +418,8 @@ via caller = {{delay_macro.caller}}
 ### Version history
 
 - 1.29 : Added `loop.previtem` and `loop.nextitem`; fixed `op-sort` reverse/attribute kwargs; fixed `op-map` and `fun-or-attr`
+- 1.28 : Addition of type Tvector
+- 1.27 : Fixes to lexer
 - 1.26 : Ported to CHICKEN 5
 - 1.23 : Added built-in function `allCombs`
 - 1.18 : Renamed `groupBy` to `batch` for compatibility with Jinja
