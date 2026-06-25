@@ -87,7 +87,7 @@
                 (only utf8 string-length substring)
 		(only utf8-srfi-13 string-null? string-every string-upcase
 		      string-downcase string-titlecase string-concatenate string-trim-both string-pad
-		      string-ci< string<)
+		      string-ci< string< string>)
 		(only utf8-srfi-14 char-set:lower-case char-set:upper-case char-set:whitespace 
 		      char-set char-set->string char-set-contains?)
 		(only silex lex-tables lexer-make-IS lexer-make-lexer )

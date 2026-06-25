@@ -396,7 +396,7 @@
   )
 
 
-(define (iter-make-ctx ctx iterator item len i)
+(define (iter-make-ctx ctx iterator item len i previtem nextitem)
   (let* (
          (cycle (Tfun (lambda (args kwargs)
                         (let ((alen (length args)))
@@ -411,8 +411,10 @@
                                    (first     . ,(Tbool (= i 0)))
                                    (last      . ,(Tbool (= i (- len 1))))
                                    (length    . ,(Tint len))
-                                   (cycle     . ,cycle)))))
-         
+                                   (cycle     . ,cycle)
+                                   (previtem  . ,previtem)
+                                   (nextitem  . ,nextitem)))))
+
          )
     ctx
     )
@@ -430,16 +432,18 @@
 	 (len (length lst)))
 
 
-    (let recur ((ctx ctx) (i 0) (lst lst))
+    (let recur ((ctx ctx) (i 0) (lst lst) (prev (Tnull)))
 
       (if (null? lst) ctx
-	  
-	  (let ((item (car lst)))
-	    (let* ((ctx (iter-make-ctx ctx iterator item len i))
+
+	  (let* ((item (car lst))
+                 (rest (cdr lst))
+                 (next (if (null? rest) (Tnull) (car rest))))
+	    (let* ((ctx (iter-make-ctx ctx iterator item len i prev next))
 		   (ctx  (f ctx))
 		   (ctx  (pop-frame ctx)))
-	      
-	      (recur ctx (+ i 1) (cdr lst))
+
+	      (recur ctx (+ i 1) rest item)
 	      )))
       )))
 
@@ -1326,11 +1330,10 @@
 (define (fun-or-attr fn kwargs)
   (cases tvalue fn
          (Tfun (f) f)
-         (else 
-           (attribute (cases tvalue (get-kvalue 'attribute kwargs `((attribute . ,(Tnull) )))
-                          (Tstr (s) (lambda (x) (tobjval-lookup x (string->symbol s))))
-                          (else (error 'fun-or-attr "operand type error")))))
-         ))
+         (else
+           (cases tvalue (get-kvalue 'attribute kwargs `((attribute . ,(Tnull))))
+                  (Tstr (s) (lambda (x) (tobjval-lookup x (string->symbol s))))
+                  (else (error 'fun-or-attr "operand type error"))))))
          
 
 (define (op-groupby pathval value kwargs)
@@ -1346,18 +1349,17 @@
   (let ((f (fun-or-attr fn kwargs)))
     (cases tvalue value
            (Tlist (l) (Tlist (map f l)))
-           (Tvector (v) (Tvector (vector-map f v))))
-	   (else (error 'map "operand type error" value))
-    ))
+           (Tvector (v) (Tvector (vector-map f v)))
+	   (else (error 'map "operand type error" value)))))
 
 
 (define (op-sort lst kwargs)
-    (let* ((defaults  `((reverse . ,(Tbool #t))
+    (let* ((defaults  `((reverse . ,(Tbool #f))
                         (attribute . ,(Tstr ""))))
-           (reverse (cases tvalue (get-kvalue 'reverse kwargs defaults)
+           (reverse (cases tvalue (get-kvalue 'reverse kwargs defaults: defaults)
                           (Tbool (v) v)
                           (else (error 'sort "operand type error"))))
-           (attribute (cases tvalue (get-kvalue 'attribute kwargs defaults)
+           (attribute (cases tvalue (get-kvalue 'attribute kwargs defaults: defaults)
                           (Tstr (s) s)
                           (else (error 'sort "operand type error")))))
 
@@ -1381,9 +1383,9 @@
                          (let ((compare (cases tvalue (tobjval-lookup (car lst) attribute)
                                                (Tstr (s) (if reverse string> string<))
                                                (else (if reverse > <)))))
-                           (Tlist (map (sort lst (lambda (x y) (compare
-                                                                (tobjval-lookup x attribute)                     
-                                                                (tobjval-lookup y attribute))))))
+                           (Tlist (sort lst (lambda (x y) (compare
+                                                           (tobjval-lookup x attribute)
+                                                           (tobjval-lookup y attribute)))))
                            )))
                (else (error 'sort "operand type error" lst)))
         ))

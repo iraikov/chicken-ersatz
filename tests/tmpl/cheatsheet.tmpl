@@ -144,6 +144,16 @@ join(",", [1,2,3,4,5]) = {{ join(",", [1,2,3,4,5]) }}
 {% endwith %}
 
 
+loop previtem/nextitem (suppress repeated values in tabular output)
+==================================================================
+
+{% with report_rows = [{obj: "obj1", prop: "prop1", val: "val1"},{obj: "obj1", prop: "prop2", val: "val2"},{obj: "obj1", prop: "prop3", val: "val3"},{obj: "obj2", prop: "prop1", val: "val1"}] %}
+{% for row in report_rows %}
+{% if loop.first or row.obj != loop.previtem.obj %}{{row.obj}}, {% endif %}{{row.prop}}, {{row.val}}
+{% endfor %}
+{% endwith %}
+
+
 filter tag test
 ===============
 
