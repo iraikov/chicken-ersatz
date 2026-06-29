@@ -184,7 +184,9 @@
 			    (cases tvalue callable
 				   (Tfun (fn)
 					 (if (null? nargs)
-					     (Tfun (lambda _ (fn argexprs kwargs)))
+					     (if (null? kwargs)
+						 (Tfun (lambda _ (fn argexprs kwargs)))
+						 (Tfun (lambda (args kwargs2) (fn args kwargs))))
 					     (tfun-apply callable nargs name: name kwargs: kwargs)))
 				   (else
 				    (let ((mac (get-macro ctx name)))

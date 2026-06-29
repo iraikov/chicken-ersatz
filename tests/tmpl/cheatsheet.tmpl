@@ -113,6 +113,26 @@ upper test:{{ "must be upper"|upper }}
 
 word count for "hoge hage hige" = {{ "hoge hage hige"|wordcount}}
 
+sort with attribute
+-------------------
+
+{% with items = [{name: "charlie", val: 3}, {name: "alpha", val: 1}, {name: "bravo", val: 2}] %}
+{% for item in items|sort(attribute="name") %}{{item.name}}, {% endfor %}
+{% endwith %}
+
+sort with attribute reverse
+---------------------------
+
+{% with items = [{name: "charlie", val: 3}, {name: "alpha", val: 1}, {name: "bravo", val: 2}] %}
+{% for item in items|sort(attribute="name", reverse=true) %}{{item.name}}, {% endfor %}
+{% endwith %}
+
+sort with numeric attribute
+---------------------------
+
+{% with items = [{name: "charlie", val: 3}, {name: "alpha", val: 1}, {name: "bravo", val: 2}] %}
+{% for item in items|sort(attribute="val") %}{{item.name}}: {{item.val}}, {% endfor %}
+{% endwith %}
 
 func test
 =========
