@@ -427,7 +427,7 @@ via caller = {{delay_macro.caller}}
 
 ### Version history
 
-- 1.3 : Ported to CHICKEN 6; added eval-trace mode
+- 1.31 : Ported to CHICKEN 6; added eval-trace mode
 - 1.29 : Added `loop.previtem` and `loop.nextitem`; fixed `op-sort` reverse/attribute kwargs; fixed `op-map` and `fun-or-attr`
 - 1.28 : Addition of type Tvector
 - 1.27 : Fixes to lexer
