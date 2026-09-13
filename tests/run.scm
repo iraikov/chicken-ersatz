@@ -1,6 +1,6 @@
 
 
-(import scheme (chicken base) (chicken string) test ersatz datatype)
+(import scheme (scheme base) (chicken base) (chicken string) test ersatz datatype)
 
 (define kwargs '())
 
@@ -442,8 +442,17 @@ EOF
 					   env: env
 					   models: (list (cons 'danger (Tstr script)))))
 		      )
-		 (tval-equal? (Tstr output) 
+		 (tval-equal? (Tstr output)
                               (op-escape-html (Tstr (string-append "This is some text. " script)) kwargs))))
+
+   (test-assert "eval-trace"
+	       (begin
+		 (eval-trace #t)
+		 (let ((result (tval-equal?
+				(Tstr (from-string "{% set x = \"test\" %}{{x}}"))
+				(Tstr "test"))))
+		   (eval-trace #f)
+		   result)))
 
 #|
 

@@ -5,7 +5,7 @@
 ;; Based on the Ocaml Jingoo library by Masaki WATANABE, which is in
 ;; turn based on the Python Jinja2 library.
 ;;
-;; Copyright 2012-2020 Ivan Raikov.
+;; Copyright 2012-2026 Ivan Raikov.
 ;;
 ;; This program is free software: you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -24,11 +24,9 @@
 (module ersatz
 
 	(
-         debug
-
-	 from-string from-file
+         from-string from-file
 	 statements-from-string statements-from-file
-	 eval-expr eval-statement eval-statements
+	 eval-expr eval-statement eval-statements eval-trace
 	 template-std-env init-context
 
 	 keep-lexer-table lexer-trace
@@ -71,7 +69,7 @@
          op-vector op-ref op-update op-subvector
 	 )
 
-	(import scheme (chicken base)
+	(import scheme (scheme base) (chicken base)
                 (only (chicken file) file-exists? delete-file )
                 (only (chicken process) system)
                 (only (chicken process-context) current-directory)
@@ -107,8 +105,6 @@
   (syntax-rules ()
     ((_ exp ...)
      (execute (list `exp ...)))))
-
-(define debug (make-parameter 0))
 
 ;;
 ;; template environment
@@ -242,59 +238,96 @@
 
 (define tvalue-list? (list-of tvalue?))
 
+
+(define-datatype texpr texpr?
+
+  (IdentExpr       (s symbol?))
+  (LiteralExpr     (v tvalue?))
+  (NotOpExpr       (e texpr?))
+  (NegativeOpExpr  (e texpr?))
+  (PlusOpExpr      (e1 texpr?) (e2 texpr?))
+  (MinusOpExpr     (e1 texpr?) (e2 texpr?))
+  (TimesOpExpr     (e1 texpr?) (e2 texpr?))
+  (PowerOpExpr     (e1 texpr?) (e2 texpr?))
+  (DivOpExpr       (e1 texpr?) (e2 texpr?))
+  (ModOpExpr       (e1 texpr?) (e2 texpr?))
+  (AndOpExpr       (e1 texpr?) (e2 texpr?))
+  (OrOpExpr        (e1 texpr?) (e2 texpr?))
+  (NotEqOpExpr     (e1 texpr?) (e2 texpr?))
+  (EqEqOpExpr      (e1 texpr?) (e2 texpr?))
+  (LtOpExpr        (e1 texpr?) (e2 texpr?))
+  (GtOpExpr        (e1 texpr?) (e2 texpr?))
+  (LtEqOpExpr      (e1 texpr?) (e2 texpr?))
+  (GtEqOpExpr      (e1 texpr?) (e2 texpr?))
+  (DotExpr         (e1 texpr?) (e2 texpr?))
+  (BracketExpr     (e1 texpr?) (e2 texpr?))
+  (ApplyExpr       (e texpr?) (a (list-of texpr?)))
+  (ListExpr        (xs (list-of texpr?)))
+  (SetExpr         (xs (list-of texpr?)))
+  (ObjExpr         (xs (list-of expression-pair?)))
+  (TestOpExpr      (e1 texpr?) (e2 texpr?))
+  (KeywordExpr     (e1 texpr?) (e2 texpr?))
+  (AliasExpr       (e1 texpr?) (e2 texpr?))
+  (InOpExpr        (e1 texpr?) (e2 texpr?))
+  )
+
+(define (expression-pair? x) (and (texpr? (car x)) (texpr? (cdr x))))
+
 (define texpr-alist?
   (list-of (lambda (x) (and (symbol? (car x)) (texpr? (cdr x))))))
 
 
 
 
-(define-record-printer (tvalue x out)
-  (cases tvalue x
-	 (Tnull ()   (fprintf out "<null>"))
-	 (Tint   (i) (fprintf out "~A" i))
-	 (Tbool  (b) (fprintf out "~A" (if b "true" "false")))
-	 (Tfloat (n) (fprintf out "~A" n))
-	 (Tstr   (s) (fprintf out "~A" s))
-	 (Tobj   (x) (fprintf out "<obj>"))
-	 (Tlist  (x) (fprintf out "<list>"))
-	 (Tset   (x) (fprintf out "<set>"))
-	 (Tfun   (x) (fprintf out "<function>"))
-	 (Tvector   (x) (fprintf out "<vector>"))
-	 ))
+(set-record-printer! tvalue
+                     (lambda (x out)
+                       (cases tvalue x
+	                      (Tnull ()   (fprintf out "<null>"))
+	                      (Tint   (i) (fprintf out "~A" i))
+	                      (Tbool  (b) (fprintf out "~A" (if b "true" "false")))
+	                      (Tfloat (n) (fprintf out "~A" n))
+	                      (Tstr   (s) (fprintf out "~A" s))
+	                      (Tobj   (x) (fprintf out "<obj>"))
+	                      (Tlist  (x) (fprintf out "<list>"))
+	                      (Tset   (x) (fprintf out "<set>"))
+	                      (Tfun   (x) (fprintf out "<function>"))
+	                      (Tvector   (x) (fprintf out "<vector>"))
+	                      )))
 
 
-(define-record-printer (texpr x out)
-  (cases texpr x
-         (IdentExpr (s)   (fprintf out "Ident(~A)" s))
-         (LiteralExpr (v) (fprintf out "Literal (~A)" v))
-         (NotOpExpr       (e) (fprintf out "Not (~A)" e))
-         (NegativeOpExpr  (e) (fprintf out "Neg (~A)" e))
-         (PlusOpExpr      (e1 e2) (fprintf out "Plus (~A,~A)" e1 e2))
-         (MinusOpExpr     (e1 e2) (fprintf out "Minus (~A,~A)" e1 e2))
-         (TimesOpExpr     (e1 e2) (fprintf out "Times (~A,~A)" e1 e2))
-         (PowerOpExpr     (e1 e2) (fprintf out "Power (~A,~A)" e1 e2))
-         (DivOpExpr       (e1 e2) (fprintf out "Div (~A,~A)" e1 e2))
-         (ModOpExpr       (e1 e2) (fprintf out "Mod (~A,~A)" e1 e2))
-         (AndOpExpr       (e1 e2) (fprintf out "And (~A,~A)" e1 e2))
-         (OrOpExpr        (e1 e2) (fprintf out "Or (~A,~A)" e1 e2))
-         (NotEqOpExpr     (e1 e2) (fprintf out "Neq (~A,~A)" e1 e2))
-         (EqEqOpExpr      (e1 e2) (fprintf out "Eq (~A,~A)" e1 e2))
-         (LtOpExpr        (e1 e2) (fprintf out "Lt (~A,~A)" e1 e2))
-         (GtOpExpr        (e1 e2) (fprintf out "PGt (~A,~A)" e1 e2))
-         (LtEqOpExpr      (e1 e2) (fprintf out "LtEq (~A,~A)" e1 e2))
-         (GtEqOpExpr      (e1 e2) (fprintf out "GtEq (~A,~A)" e1 e2))
-         (DotExpr         (e1 e2) (fprintf out "Dot (~A,~A)" e1 e2))
-         (BracketExpr     (e1 e2) (fprintf out "Brk (~A,~A)" e1 e2))
-         (ApplyExpr       (e a) (fprintf out "Apply (~A,~A)" e a))
-         (ListExpr        (xs) (fprintf out "List (~A)" xs))
-         (SetExpr         (xs) (fprintf out "Set (~A)" xs))
-         (ObjExpr         (xs) (fprintf out "Obj (~A)" xs))
-         (TestOpExpr      (e1 e2) (fprintf out "Test (~A,~A)" e1 e2))
-         (KeywordExpr     (e1 e2) (fprintf out "Keyword (~A,~A)" e1 e2))
-         (AliasExpr       (e1 e2) (fprintf out "Alias (~A,~A)" e1 e2))
-         (InOpExpr        (e1 e2) (fprintf out "In (~A,~A)" e1 e2))
-         ))
-
+(set-record-printer! texpr
+                     (lambda (x out)
+                       (cases texpr x
+                              (IdentExpr (s)   (fprintf out "Ident(~A)" s))
+                              (LiteralExpr (v) (fprintf out "Literal (~A)" v))
+                              (NotOpExpr       (e) (fprintf out "Not (~A)" e))
+                              (NegativeOpExpr  (e) (fprintf out "Neg (~A)" e))
+                              (PlusOpExpr      (e1 e2) (fprintf out "Plus (~A,~A)" e1 e2))
+                              (MinusOpExpr     (e1 e2) (fprintf out "Minus (~A,~A)" e1 e2))
+                              (TimesOpExpr     (e1 e2) (fprintf out "Times (~A,~A)" e1 e2))
+                              (PowerOpExpr     (e1 e2) (fprintf out "Power (~A,~A)" e1 e2))
+                              (DivOpExpr       (e1 e2) (fprintf out "Div (~A,~A)" e1 e2))
+                              (ModOpExpr       (e1 e2) (fprintf out "Mod (~A,~A)" e1 e2))
+                              (AndOpExpr       (e1 e2) (fprintf out "And (~A,~A)" e1 e2))
+                              (OrOpExpr        (e1 e2) (fprintf out "Or (~A,~A)" e1 e2))
+                              (NotEqOpExpr     (e1 e2) (fprintf out "Neq (~A,~A)" e1 e2))
+                              (EqEqOpExpr      (e1 e2) (fprintf out "Eq (~A,~A)" e1 e2))
+                              (LtOpExpr        (e1 e2) (fprintf out "Lt (~A,~A)" e1 e2))
+                              (GtOpExpr        (e1 e2) (fprintf out "PGt (~A,~A)" e1 e2))
+                              (LtEqOpExpr      (e1 e2) (fprintf out "LtEq (~A,~A)" e1 e2))
+                              (GtEqOpExpr      (e1 e2) (fprintf out "GtEq (~A,~A)" e1 e2))
+                              (DotExpr         (e1 e2) (fprintf out "Dot (~A,~A)" e1 e2))
+                              (BracketExpr     (e1 e2) (fprintf out "Brk (~A,~A)" e1 e2))
+                              (ApplyExpr       (e a) (fprintf out "Apply (~A,~A)" e a))
+                              (ListExpr        (xs) (fprintf out "List (~A)" xs))
+                              (SetExpr         (xs) (fprintf out "Set (~A)" xs))
+                              (ObjExpr         (xs) (fprintf out "Obj (~A)" xs))
+                              (TestOpExpr      (e1 e2) (fprintf out "Test (~A,~A)" e1 e2))
+                              (KeywordExpr     (e1 e2) (fprintf out "Keyword (~A,~A)" e1 e2))
+                              (AliasExpr       (e1 e2) (fprintf out "Alias (~A,~A)" e1 e2))
+                              (InOpExpr        (e1 e2) (fprintf out "In (~A,~A)" e1 e2))
+                              )))
+                     
   
 (define (type-string-of-tvalue v)
   (cases tvalue v
@@ -436,80 +469,47 @@
   )
 
 
-(define-record-printer (tstmt x out)
-  (cases tstmt x
-         (TextStatement (s)
-                        (fprintf out "<TextStatement \"~A\">" s))
-         (ExpandStatement (e)
-                          (fprintf out "<ExpandStatement ~A>" e))
-         (IfStatement     (cb el)
-                          (fprintf out "<IfStatement ~A ~A>" cb el))
-         (ForStatement    (e1 e2 a)
-                          (fprintf out "<ForStatement ~A ~A ~A>" e1 e2 a))
-         (IncludeStatement (s wcontext)
-                           (fprintf out "<IncludeStatement ~A ~A>" s wcontext))
-         (ExtendsStatement (s)
-                           (fprintf out "<ExtendsStatement ~A>" s))
-         (ImportStatement  (s w)
-                           (fprintf out "<ImportStatement ~A ~A>" s w))
-         (FromImportStatement (s w)
-                              (fprintf out "<FromImportStatement ~A ~A>" s w))
-         (SetStatement (e1 e2)
-                       (fprintf out "<SetStatement ~A ~A>" e1 e2))
-         (NamespaceStatement (s bs)
-                             (fprintf out "<NamespaceStatement ~A : ~A>" s bs))
-         (BlockStatement  (e f b)
-                          (fprintf out "<BlockStatement ~A ~A ~A>" e f b))
-         (MacroStatement  (e a b)
-                          (fprintf out "<MacroStatement ~A ~A ~A>" e a b))
-         (FilterStatement (e b)
-                          (fprintf out "<FilterStatement ~A ~A>" e b))
-         (CallStatement (e a1 a2 b)
-                        (fprintf out "<CallStatement ~A ~A ~A ~A>" e a1 a2 b))
-         (WithStatement (es b)
-                        (fprintf out "<WithStatement ~A ~A>" es b))
-         (AutoEscapeStatement (e b)
-                              (fprintf out "<AutoEscapeStatement ~A ~A>" e b))
-         ))
+(set-record-printer! tstmt
+                     (lambda (x out)
+                       (cases tstmt x
+                              (TextStatement (s)
+                                             (fprintf out "<TextStatement \"~A\">" s))
+                              (ExpandStatement (e)
+                                               (fprintf out "<ExpandStatement ~A>" e))
+                              (IfStatement     (cb el)
+                                               (fprintf out "<IfStatement ~A ~A>" cb el))
+                              (ForStatement    (e1 e2 a)
+                                               (fprintf out "<ForStatement ~A ~A ~A>" e1 e2 a))
+                              (IncludeStatement (s wcontext)
+                                                (fprintf out "<IncludeStatement ~A ~A>" s wcontext))
+                              (ExtendsStatement (s)
+                                                (fprintf out "<ExtendsStatement ~A>" s))
+                              (ImportStatement  (s w)
+                                                (fprintf out "<ImportStatement ~A ~A>" s w))
+                              (FromImportStatement (s w)
+                                                   (fprintf out "<FromImportStatement ~A ~A>" s w))
+                              (SetStatement (e1 e2)
+                                            (fprintf out "<SetStatement ~A ~A>" e1 e2))
+                              (NamespaceStatement (s bs)
+                                                  (fprintf out "<NamespaceStatement ~A : ~A>" s bs))
+                              (BlockStatement  (e f b)
+                                               (fprintf out "<BlockStatement ~A ~A ~A>" e f b))
+                              (MacroStatement  (e a b)
+                                               (fprintf out "<MacroStatement ~A ~A ~A>" e a b))
+                              (FilterStatement (e b)
+                                               (fprintf out "<FilterStatement ~A ~A>" e b))
+                              (CallStatement (e a1 a2 b)
+                                             (fprintf out "<CallStatement ~A ~A ~A ~A>" e a1 a2 b))
+                              (WithStatement (es b)
+                                             (fprintf out "<WithStatement ~A ~A>" es b))
+                              (AutoEscapeStatement (e b)
+                                                   (fprintf out "<AutoEscapeStatement ~A ~A>" e b))
+                              )))
 
 
 
 
 (define macro-code? (list-of tstmt?))
-
-(define-datatype texpr texpr?
-
-  (IdentExpr       (s symbol?))
-  (LiteralExpr     (v tvalue?))
-  (NotOpExpr       (e texpr?))
-  (NegativeOpExpr  (e texpr?))
-  (PlusOpExpr      (e1 texpr?) (e2 texpr?))
-  (MinusOpExpr     (e1 texpr?) (e2 texpr?))
-  (TimesOpExpr     (e1 texpr?) (e2 texpr?))
-  (PowerOpExpr     (e1 texpr?) (e2 texpr?))
-  (DivOpExpr       (e1 texpr?) (e2 texpr?))
-  (ModOpExpr       (e1 texpr?) (e2 texpr?))
-  (AndOpExpr       (e1 texpr?) (e2 texpr?))
-  (OrOpExpr        (e1 texpr?) (e2 texpr?))
-  (NotEqOpExpr     (e1 texpr?) (e2 texpr?))
-  (EqEqOpExpr      (e1 texpr?) (e2 texpr?))
-  (LtOpExpr        (e1 texpr?) (e2 texpr?))
-  (GtOpExpr        (e1 texpr?) (e2 texpr?))
-  (LtEqOpExpr      (e1 texpr?) (e2 texpr?))
-  (GtEqOpExpr      (e1 texpr?) (e2 texpr?))
-  (DotExpr         (e1 texpr?) (e2 texpr?))
-  (BracketExpr     (e1 texpr?) (e2 texpr?))
-  (ApplyExpr       (e texpr?) (a (list-of texpr?)))
-  (ListExpr        (xs (list-of texpr?)))
-  (SetExpr         (xs (list-of texpr?)))
-  (ObjExpr         (xs (list-of expression-pair?)))
-  (TestOpExpr      (e1 texpr?) (e2 texpr?))
-  (KeywordExpr     (e1 texpr?) (e2 texpr?))
-  (AliasExpr       (e1 texpr?) (e2 texpr?))
-  (InOpExpr        (e1 texpr?) (e2 texpr?))
-  )
-
-(define (expression-pair? x) (and (texpr? (car x)) (texpr? (cdr x))))
 
 (define template-ast? (list-of tstmt?))
 

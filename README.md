@@ -38,6 +38,16 @@ statement types.
 
 `eval-statement :: TEMPLATE-ENVIRONMENT * TEMPLATE-CONTEXT * TSTMT -> TEMPLATE-CONTEXT`
 
+---
+
+`eval-trace :: [BOOL] -> BOOL`
+
+A parameter object. When set to `#t`, prints a log line to the
+current output port for each template statement as it is
+evaluated, showing the statement type and relevant identifying
+detail (variable name, block name, loop iterator, etc.). Disabled
+(`#f`) by default.
+
 #### Template environment and context initialization
 
 `template-std-env :: [autoescape: BOOL] [search-path: STRING LIST] [filters: STRING LIST] [lexer-table: LEXER-TABLE] -> TEMPLATE-ENVIRONMENT`
@@ -417,6 +427,7 @@ via caller = {{delay_macro.caller}}
 
 ### Version history
 
+- 1.3 : Ported to CHICKEN 6; added eval-trace mode
 - 1.29 : Added `loop.previtem` and `loop.nextitem`; fixed `op-sort` reverse/attribute kwargs; fixed `op-map` and `fun-or-attr`
 - 1.28 : Addition of type Tvector
 - 1.27 : Fixes to lexer

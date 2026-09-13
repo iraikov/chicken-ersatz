@@ -1,5 +1,5 @@
 
-(import scheme (chicken base) (chicken file))
+(import scheme (scheme base) (chicken base) (chicken file))
 
 (include "make-ersatz-lexer.scm")
 (let ((out (open-output-file "ersatz.l")))

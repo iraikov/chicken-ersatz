@@ -5,7 +5,7 @@
 ;;  Based on the Ocaml Jingoo library, which is in turn based on the
 ;;  Python Jinja2 library.
 ;;
-;; Copyright 2012-2014 Ivan Raikov
+;; Copyright 2012-2026 Ivan Raikov
 ;;
 ;; This program is free software: you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -262,11 +262,54 @@
 
 
 
+(define eval-trace (make-parameter #f))
+
+(define (truncate-text s maxlen)
+  (if (> (string-length s) maxlen)
+      (string-append (substring s 0 maxlen) "...")
+      s))
+
+(define (describe-statement stmt)
+  (cases tstmt stmt
+	 (TextStatement (s)
+	    (sprintf "TextStatement ~S" (truncate-text s 40)))
+	 (ExpandStatement (e) "ExpandStatement")
+	 (SetStatement (setexpr expr)
+	    (cases texpr setexpr
+		   (SetExpr (ident-lst)
+		      (sprintf "SetStatement ~A" (ident-names-of ident-lst)))
+		   (DotExpr (ns-expr prop-expr)
+		      (sprintf "SetStatement ~A.~A"
+			       (ident-expr->name ns-expr)
+			       (ident-expr->name prop-expr)))
+		   (else "SetStatement")))
+	 (NamespaceStatement (ns bind-exprs)
+	    (sprintf "NamespaceStatement ~A" ns))
+	 (FilterStatement (nexpr stmts)
+	    (sprintf "FilterStatement ~A" (ident-expr->name nexpr)))
+	 (IfStatement (conds elses) "IfStatement")
+	 (ForStatement (iterator list-expr stmts)
+	    (let ((names (cases texpr iterator
+			   (IdentExpr (name) (list name))
+			   (SetExpr (lst)  (ident-names-of lst))
+			   (ListExpr (lst) (ident-names-of lst))
+			   (else '()))))
+	      (sprintf "ForStatement ~A" names)))
+	 (BlockStatement (idexpr endexpr stmts)
+	    (sprintf "BlockStatement ~A" (ident-expr->name idexpr)))
+	 (CallStatement (idexpr call-args-def macro-args call-stmts)
+	    (sprintf "CallStatement ~A" (ident-expr->name idexpr)))
+	 (IncludeStatement (path w)
+	    (sprintf "IncludeStatement ~S" path))
+	 (WithStatement (binds stmts) "WithStatement")
+	 (AutoEscapeStatement (expr stmts) "AutoEscapeStatement")
+	 (else "statement")))
+
 (define (eval-statement env ctx stmt)
 
-  (if (> (debug) 0)
+  (if (eval-trace)
       (fprintf (current-output-port)
-               "ersatz: stmt = ~A~%" stmt))
+               "eval: ~A~%" (describe-statement stmt)))
 
   (cases tstmt stmt
 
